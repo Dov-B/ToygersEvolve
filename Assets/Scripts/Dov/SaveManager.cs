@@ -40,6 +40,7 @@ public class SaveManager : MonoBehaviour
 
     public IEnumerator LoadPlayerData(string playerId, System.Action<PlayerData> onSuccess, System.Action onError)
     {
+        // Get ou Post ?
         UnityWebRequest request = UnityWebRequest.Get($"{LoadUrl}?playerId={playerId}");
         yield return request.SendWebRequest();
 
@@ -55,4 +56,10 @@ public class SaveManager : MonoBehaviour
             onError?.Invoke();
         }
     }
+
+    // Pourquoi save local ?
+    // Plus d'info sur le PlayerIdentity
+    // Pourquoi un url pour le player id ?
+    // Comment le serveur check le player id ? (pour savoir si y'a des choses a faire du cote unity)
+    // A quels moments on save ?
 }

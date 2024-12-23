@@ -21,28 +21,20 @@ public class GameManager : MonoBehaviour
     {
         _saveManager = SaveManager.Instance;
 
-        string localPlayerId = PlayerIdentity.GetPlayerId();
-        if (string.IsNullOrEmpty(localPlayerId))
-        {
-            // Si aucun Player ID local, récupérer depuis le backend
-            StartCoroutine(PlayerIdentity.FetchPlayerIdFromServer(
-                playerId =>
-                {
-                    Debug.Log("Player ID récupéré depuis Telegram : " + playerId);
-                    InitializePlayerData(playerId);
-                },
-                () =>
-                {
-                    Debug.LogError("Impossible de récupérer le Player ID !");
-                }
-            ));
-        }
-        else
-        {
-            // ID déjà localement disponible
-            Debug.Log("Player ID local : " + localPlayerId);
-            InitializePlayerData(localPlayerId);
-        }
+        // Récupérer le PlayerId depuis le backend
+        StartCoroutine(PlayerIdentity.FetchPlayerIdFromServer(
+            playerId =>
+            {
+                Debug.Log("Player ID récupéré depuis Telegram : " + playerId);
+
+                // Une fois l'ID récupéré, charge les données du joueur
+                InitializePlayerData(playerId);
+            },
+            () =>
+            {
+                Debug.LogError("Impossible de récupérer le Player ID !");
+            }
+        ));
     }
 
     private void InitializePlayerData(string playerId)
@@ -59,6 +51,7 @@ public class GameManager : MonoBehaviour
             {
                 Debug.Log("Aucune donnée trouvée, création d'un nouveau joueur.");
                 _currentPlayerData = new PlayerData(playerId, 1, 0);
+                SaveProgress();
             }
         ));
     }
