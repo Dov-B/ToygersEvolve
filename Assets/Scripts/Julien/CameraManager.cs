@@ -13,8 +13,8 @@ public class CameraManager : MonoBehaviour
     private Vector3 _lastMousePosition;
     private Vector3 _startClickPosition;
 
-    private Vector2 centerTouchPos;  
-    private Vector2 centerTouchDelta; 
+    private Vector2 centerTouchPos;
+    private Vector2 centerTouchDelta;
 
     private float _timeSinceClick = 0;
 
@@ -23,6 +23,12 @@ public class CameraManager : MonoBehaviour
     private Vector3 _velocity = Vector3.zero; // Vélocité de la caméra
     public float deceleration = 5f; // La vitesse à laquelle la caméra décélère après la fin du mouvement
     public float moveSpeed = 1f;
+
+
+    public float maxX, minX, maxY, minY, maxZ, minZ;
+    public float smoothTime = 0.3f;  // Temps pour lisser les transitions
+
+    private Vector3 velocity = Vector3.zero;  // Utilisé pour smooth damping
 
     private void Awake()
     {
@@ -34,10 +40,12 @@ public class CameraManager : MonoBehaviour
     {
         CheckClick();
 
-        if(Application.isMobilePlatform) HandleTouchMovement();
-        else                             HandlePCMovement();;
+        if (Application.isMobilePlatform) HandleTouchMovement();
+        else HandlePCMovement(); ;
 
         ApplyVelocity();
+
+        BoundsChecker();
     }
 
     private void HandlePCMovement()
@@ -82,7 +90,7 @@ public class CameraManager : MonoBehaviour
 
     private void ApplyVelocity()
     {
-        if (!Input.GetMouseButton(0)) 
+        if (!Input.GetMouseButton(0))
         {
             _velocity = Vector3.Lerp(_velocity, Vector3.zero, deceleration * Time.deltaTime);
 
@@ -98,7 +106,7 @@ public class CameraManager : MonoBehaviour
 
     private void HandleTouchMovement()
     {
-        if(Input.touchCount >0)
+        if (Input.touchCount > 0)
         {
             Touch touch = Input.touches[0];
 
@@ -107,7 +115,7 @@ public class CameraManager : MonoBehaviour
                 _canMove = !IsMouseOverUI();
             }
 
-            if(touch.phase == TouchPhase.Moved && _canMove)
+            if (touch.phase == TouchPhase.Moved && _canMove)
             {
                 Vector3 touchPosPrev = touch.position - touch.deltaPosition;
 
@@ -123,8 +131,15 @@ public class CameraManager : MonoBehaviour
         }
     }
 
-    public void SetCameraPoint()
+    public void BoundsChecker()
     {
-        _camera.transform.position = Vector3.zero;
+        // Créer un vecteur contenant la position de la caméra avec des limites
+        Vector3 targetPosition = new Vector3(
+            Mathf.Clamp(_camera.transform.position.x, minX, maxX),
+            Mathf.Clamp(_camera.transform.position.y, minY, maxY),
+            Mathf.Clamp(_camera.transform.position.z, minZ, maxZ)
+        );
+
+        _camera.transform.position = Vector3.SmoothDamp(_camera.transform.position, targetPosition, ref velocity, smoothTime);
     }
 }
