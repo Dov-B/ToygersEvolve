@@ -20,15 +20,15 @@ public class CameraManager : MonoBehaviour
 
     private bool _canMove = true;
 
-    private Vector3 _velocity = Vector3.zero; // Vélocité de la caméra
+    private Vector3 _camVelocity = Vector3.zero; // Camera's velocity when sliding a finger
     public float deceleration = 5f; // La vitesse à laquelle la caméra décélère après la fin du mouvement
     public float moveSpeed = 1f;
 
 
-    public float maxX, minX, maxY, minY, maxZ, minZ;
-    public float smoothTime = 0.3f;  // Temps pour lisser les transitions
-
-    private Vector3 velocity = Vector3.zero;  // Utilisé pour smooth damping
+    //***     Camera Boundaries     ***//
+    [SerializeField] private float smoothTime = 0.3f;  // time amount when smooth damping when colliding the cam boundaries
+    [SerializeField] private float maxX, minX, maxY, minY, maxZ, minZ;
+    private Vector3 velocity = Vector3.zero;  // used for smooth damping when colliding the cam boundaries
 
     private void Awake()
     {
@@ -41,7 +41,7 @@ public class CameraManager : MonoBehaviour
         CheckClick();
 
         if (Application.isMobilePlatform) HandleTouchMovement();
-        else HandlePCMovement(); ;
+        else                              HandlePCMovement();
 
         ApplyVelocity();
 
@@ -66,7 +66,7 @@ public class CameraManager : MonoBehaviour
 
             _camera.transform.position -= delta;
 
-            _velocity = delta * moveSpeed;
+            _camVelocity = delta * moveSpeed;
         }
     }
 
@@ -92,9 +92,9 @@ public class CameraManager : MonoBehaviour
     {
         if (!Input.GetMouseButton(0))
         {
-            _velocity = Vector3.Lerp(_velocity, Vector3.zero, deceleration * Time.deltaTime);
+            _camVelocity = Vector3.Lerp(_camVelocity, Vector3.zero, deceleration * Time.deltaTime);
 
-            _camera.transform.position -= _velocity * Time.deltaTime;
+            _camera.transform.position -= _camVelocity * Time.deltaTime;
         }
     }
 
@@ -126,12 +126,12 @@ public class CameraManager : MonoBehaviour
 
                 _camera.transform.position -= delta;
 
-                _velocity = delta * moveSpeed;
+                _camVelocity = delta * moveSpeed;
             }
         }
     }
 
-    public void BoundsChecker()
+    private void BoundsChecker()
     {
         // Créer un vecteur contenant la position de la caméra avec des limites
         Vector3 targetPosition = new Vector3(
@@ -142,4 +142,6 @@ public class CameraManager : MonoBehaviour
 
         _camera.transform.position = Vector3.SmoothDamp(_camera.transform.position, targetPosition, ref velocity, smoothTime);
     }
+
+
 }
