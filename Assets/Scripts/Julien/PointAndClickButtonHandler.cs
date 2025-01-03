@@ -1,6 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class PointAndClickButtonHandler : MonoBehaviour
@@ -8,75 +11,127 @@ public class PointAndClickButtonHandler : MonoBehaviour
     [Space(5), Header("Shockwave")]
 
     [SerializeField] private Image _shockwaveImage;
-    private bool _shockwaveImageInitialized = false;
 
-    [SerializeField] private float _lerpAlphaTime;
+    [Space(5), Header("Selection Button")]
 
-    [SerializeField] private float _minScaleX, _minScaleY;
-    [SerializeField] private float _maxScaleX, _maxScaleY;
+    [SerializeField] private Image _selectionButtonImage;
 
-    [SerializeField] private float _minAlpha, _maxAlpha;
+    [Space(5), Header("Action Button")]
 
-    [Space(5), Header("Button")]
+    [SerializeField] private GameObject _actionButtonGameobject;
+    [SerializeField] private float _lerpActionButtonTime;
+    [SerializeField] private float _minAlphaActionButton, _maxAlphaActionButton;
+    [SerializeField] private float _buttonTransitionOffset;
 
-    private Image _buttonImage;
-    private Animator _buttonAnimator;
+    private Image _actionButtonImage;
+    private TextMeshProUGUI _actionButtonText;
 
     private void Start()
     {
-        _buttonImage = GetComponent<Image>();
-        _buttonAnimator = GetComponent<Animator>();
+        _actionButtonImage = _actionButtonGameobject.GetComponent<Image>();
+        _actionButtonText = _actionButtonGameobject.GetComponentInChildren<TextMeshProUGUI>();
     }
 
-    // Lerping both shockwave's scale and alpha
-    public IEnumerator LerpShockwave()
+    private void Update()
     {
-        CheckShockwaveImageInitialization();
+        CheckInputOutsideThisButton();
+    }
+
+    public void DisableSelectionButton()
+    {
+        _shockwaveImage.enabled = false;
+        _selectionButtonImage.enabled = false;
+    }
+
+    public void EnableSelectionButton()
+    {
+        _shockwaveImage.enabled = true;
+        _selectionButtonImage.enabled = true;
+    }
+
+    // Lerping Image and Text's alphas and gameobject's position
+    public void ShowActionButton()
+    {
+        StartCoroutine(LerpActionButton(_minAlphaActionButton,_maxAlphaActionButton,_buttonTransitionOffset));
+    }
+
+    public void HideActionButton()
+    {
+        StartCoroutine(LerpActionButton(_maxAlphaActionButton, _minAlphaActionButton,-_buttonTransitionOffset));
+    }
+
+    public IEnumerator LerpActionButton(float minAlpha, float maxAlpha, float buttonTransitionOffset)
+    {
+        // if action button is appearing
+        if (buttonTransitionOffset > 0)
+        {
+            DisableSelectionButton();
+            _actionButtonGameobject.SetActive(true);
+        }
+
         float timeElapsed = 0f;
 
-        Color color = _shockwaveImage.color;
+        Color colorImage = _actionButtonImage.color;
+        Color colorText = _actionButtonText.color;
 
-        Vector3 imageScale = _shockwaveImage.rectTransform.localScale;
-        Vector3 minScale = new Vector3(_minScaleX, _minScaleY, imageScale.z);
-        Vector3 maxScale = new Vector3(_maxScaleX, _maxScaleY, imageScale.z);
+        Vector3 initialTransform = _actionButtonImage.rectTransform.localPosition;
+        Vector3 finalTransform = new Vector3(initialTransform.x, initialTransform.y + buttonTransitionOffset, initialTransform.z);
 
-        while (timeElapsed < _lerpAlphaTime)
+        while (timeElapsed < _lerpActionButtonTime)
         {
-            color.a = Mathf.Lerp(_maxAlpha, _minAlpha, timeElapsed / _lerpAlphaTime);
-            _shockwaveImage.color = color;
+            colorImage.a = Mathf.Lerp(minAlpha, maxAlpha, timeElapsed / _lerpActionButtonTime);
+            colorText.a = Mathf.Lerp(minAlpha, maxAlpha, timeElapsed / _lerpActionButtonTime);
+            _actionButtonImage.rectTransform.localPosition = Vector3.Lerp(initialTransform, finalTransform, timeElapsed / _lerpActionButtonTime);
 
-            imageScale = Vector3.Lerp(minScale, maxScale, timeElapsed / _lerpAlphaTime);
-            _shockwaveImage.rectTransform.localScale = imageScale;
+            _actionButtonImage.color = colorImage;
+            _actionButtonText.color = colorText;
 
             timeElapsed += Time.deltaTime;
 
             yield return null;
         }
 
-        _shockwaveImage.color = new Color(_shockwaveImage.color.r, _shockwaveImage.color.g, _shockwaveImage.color.b, _minAlpha);
+        _actionButtonImage.color = new Color(_actionButtonImage.color.r,
+                                             _actionButtonImage.color.g,
+                                             _actionButtonImage.color.b,
+                                             maxAlpha);
 
-        _shockwaveImage.rectTransform.localScale = maxScale;
-    }
+        _actionButtonText.color = new Color(_actionButtonText.color.r,
+                                            _actionButtonText.color.g,
+                                            _actionButtonText.color.b,
+                                            maxAlpha);
 
-    public void PlayButtonAnimation()
-    {
-        _buttonAnimator.Play("ButtonBounce");
-    }
+        _actionButtonImage.rectTransform.localPosition = new Vector3(finalTransform.x, finalTransform.y, finalTransform.z);
 
-    public void DisableButton()
-    {
-        _shockwaveImage.enabled = false;    
-        _buttonImage.enabled = false;    
-    }
-
-    // Enable the shockwave image once so that it scales well during the first iteration
-    private void CheckShockwaveImageInitialization()
-    {
-        if(!_shockwaveImageInitialized)
+        // if action button is disappearing
+        if (buttonTransitionOffset < 0)
         {
-            _shockwaveImage.enabled = true;
-            _shockwaveImageInitialized = true;  
+            EnableSelectionButton();
+            _actionButtonGameobject.SetActive(false);
+        }
+    }
+
+    private void CheckInputOutsideThisButton()
+    {
+        if (Input.touchCount > 0)
+        {
+            Touch touch = Input.touches[0];
+
+            if (touch.phase == TouchPhase.Began && _actionButtonGameobject.activeInHierarchy)
+            {
+                //_actionButtonGameobject.SetActive(false);
+                EnableSelectionButton();
+
+                _selectionButtonImage.GetComponent<Shockwave>().PlayButtonAnimation();
+            }
         }
 
+        if (Input.GetMouseButtonDown(0) && _actionButtonGameobject.activeInHierarchy)
+        {
+            //_actionButtonGameobject.SetActive(false);
+            EnableSelectionButton();
+            HideActionButton();
+            _selectionButtonImage.GetComponent<Shockwave>().PlayButtonAnimation();
+        }
     }
 }

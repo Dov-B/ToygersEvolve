@@ -16,7 +16,7 @@ public class CameraManager : MonoBehaviour
     private Vector2 centerTouchPos;
     private Vector2 centerTouchDelta;
 
-    private float _timeSinceClick = 0;
+    //private float _timeSinceClick = 0;
 
     private bool _canMove = true;
 
@@ -38,7 +38,7 @@ public class CameraManager : MonoBehaviour
 
     void Update()
     {
-        CheckClick();
+        //CheckClick();
 
         if (Application.isMobilePlatform) HandleTouchMovement();
         else                              HandlePCMovement();
@@ -53,7 +53,7 @@ public class CameraManager : MonoBehaviour
         if (Input.GetMouseButtonDown(0))
         {
             _lastMousePosition = Input.mousePosition;
-            _canMove = !IsMouseOverUI();
+            _canMove = !IsTouchOverUI();
         }
 
         if (Input.GetMouseButton(0) && _canMove)
@@ -70,7 +70,7 @@ public class CameraManager : MonoBehaviour
         }
     }
 
-    private void CheckClick()
+    /*private void CheckClick()
     {
         if (Input.GetMouseButtonDown(0))
         {
@@ -86,7 +86,7 @@ public class CameraManager : MonoBehaviour
         float distance = Vector3.Distance(_startClickPosition, Input.mousePosition);
 
         if (distance > similarityThreshold) return;
-    }
+    }*/
 
     private void ApplyVelocity()
     {
@@ -98,7 +98,7 @@ public class CameraManager : MonoBehaviour
         }
     }
 
-    private bool IsMouseOverUI()
+    public static bool IsTouchOverUI()
     {
         // Return true if the mouse is hovering a UI element
         return EventSystem.current.IsPointerOverGameObject();
@@ -112,7 +112,7 @@ public class CameraManager : MonoBehaviour
 
             if (touch.phase == TouchPhase.Began)
             {
-                _canMove = !IsMouseOverUI();
+                _canMove = !IsTouchOverUI();
             }
 
             if (touch.phase == TouchPhase.Moved && _canMove)
